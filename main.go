@@ -2,46 +2,42 @@ package main
 
 import (
 	"bytes"
-	"fmt"
+	"flag"
 	"image"
-	"image/png"
+	"image/jpeg"
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/muesli/smartcrop"
+	"github.com/nfnt/resize"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func main() {
-	args := os.Args[1:]
-	fileName := args[0]
+	flag.Parse()
+	fileName := flag.Arg(0)
+	width, _ := strconv.Atoi(flag.Arg(1))
+	height, _ := strconv.Atoi(flag.Arg(2))
 
-	f, err := os.Open(fileName)
-	check(err)
+	f, _ := os.Open(fileName)
 
-	img, _, err := image.Decode(f)
-	check(err)
+	img, _, _ := image.Decode(f)
 
+	//cropSettings := smartcrop.CropSettings{DebugMode: false}
 	analyzer := smartcrop.NewAnalyzer()
-	topCrop, _ := analyzer.FindBestCrop(img, 250, 250)
-
-	// The crop will have the requested aspect ratio, but you need to copy/scale it yourself
-	fmt.Printf("Top crop: %+v\n", topCrop)
+	topCrop, _ := analyzer.FindBestCrop(img, width, height)
 
 	type SubImager interface {
 		SubImage(r image.Rectangle) image.Image
 	}
+
 	croppedimg := img.(SubImager).SubImage(topCrop)
+	scaledImg := resize.Thumbnail(uint(width), uint(height), croppedimg, resize.Bicubic)
 
 	buf := new(bytes.Buffer)
-	err = png.Encode(buf, croppedimg)
-	check(err)
+	options := jpeg.Options{Quality: 70}
 
-	err = ioutil.WriteFile("out.png", buf.Bytes(), 0644)
-	check(err)
+	_ = jpeg.Encode(buf, scaledImg, &options)
+
+	_ = ioutil.WriteFile("out.jpg", buf.Bytes(), 0644)
 }

@@ -12,3 +12,11 @@
 
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
+
+# macOS
+.DS_Store
+._*
+
+# IDE
+.vscode
+.idea
